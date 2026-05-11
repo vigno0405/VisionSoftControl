@@ -34,7 +34,11 @@ Both configurations support two Jacobian-based control strategies:
 
 **Analytic Jacobian** — symbolic Jacobians (`q2tendon`, `q2coordinates`, `q2xyz`) derived with SymPy from the PCC model, evaluated numerically via iterative Jacobian integration.
 
-**Data-driven Jacobian** — Jacobian computed on-the-fly via `torch.autograd.functional.jacobian` applied to learned FK/IK neural networks.
+**Data-driven Jacobian** — Jacobian computed on-the-fly via `torch.autograd.functional.jacobian` applied to learned FK/IK neural networks. Both networks share the residual MLP architecture below: a 128-dim input projection, three residual blocks (`Linear + BatchNorm1d + LeakyReLU` ×2 with a skip connection), and a linear regression head.
+
+<p align="center">
+<img src="asset/imgs/network_b.png" alt="MLP architecture for forward/inverse kinematics" width="720px"/>
+</p>
 
 The MULTI configuration is kinematically redundant (9 actuators, 6-DoF tip pose). A null-space controller exploits this redundancy to simultaneously track the tip target and drive the motor configuration toward a nominal posture:
 
@@ -42,11 +46,24 @@ The MULTI configuration is kinematically redundant (9 actuators, 6-DoF tip pose)
 dDELTAL = J_pseudo @ delta_pose + N @ (DELTAL_mean - DELTAL_current)
 ```
 
+### Robustness to external disturbances
+
+Closed-loop feedback compensates for gravity- and contact-induced shape distortion. The frames below visualise open-loop circular tracking *without* (left) and *with* (right) a 50 g tip payload (≈40 % of the manipulator effective mass) — exposing the deformation that the closed-loop controller actively corrects.
+
+<p align="center">
+<img src="asset/imgs/circle_visualization_a.png" alt="Open-loop circular motion, no payload" width="280px"/>
+<img src="asset/imgs/circle_visualization_b.png" alt="Open-loop circular motion, 50 g payload" width="280px"/>
+</p>
+
 ---
 
 ## Sensing & Reconstruction
 
-**Tip pose** is estimated by a CNN that maps a grayscale camera frame to end-effector position and orientation (`helyx_model.pt`). For the MULTI configuration, three cameras observe the three sections independently and the three views are stacked as channels of a single input tensor.
+**Tip pose** is estimated by a CNN that maps a grayscale camera frame to end-effector position and orientation (`helyx_model.pt`). For the MULTI configuration, three cameras observe the three sections independently and the three views are stacked as channels of a single input tensor. The architecture is a MobileNetV2 backbone with inverted residual bottlenecks, fine-tuned on our dataset. Online augmentations (brightness/contrast) precede a unit-normalised custom input convolution; global average pooling and a single linear head produce the regression outputs (6 for the single-section tip, 18 for the multi-section tips, or polynomial curvature parameters per section). Transfer learning is shared between the pose and curvature networks, and from the single- to the multi-section configuration.
+
+<p align="center">
+<img src="asset/imgs/network_a.png" alt="CNN architecture for tip pose and curvature regression" width="780px"/>
+</p>
 
 **Shape reconstruction** fits polynomial curvature models — constant, affine, or quadratic — to rotation matrices derived from OptiTrack backbone markers, via CasADi/IPOPT optimisation. An ANN-based reconstruction path is also available, using section-specific TorchScript models inferred from relative inter-section transforms.
 
