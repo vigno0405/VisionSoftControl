@@ -4,11 +4,13 @@ This repository contains the code accompanying the paper:
 **Internal Camera-based Reconstruction and Closed-loop Control of Soft Robotic Arms** — L. Vignoli, G. Pei, F. Braghin, J. Hughes.
 
 <p align="center">
-<img src="asset/imgs/setup_intro_a.png" alt="Sensing pipeline and multi-section arm" width="430px"/>
-<img src="asset/imgs/setup_intro_b.png" alt="Mechanical layout with tendon routing" width="380px"/>
+<img src="asset/setup_intro_a.png" alt="Sensing pipeline and multi-section arm" width="430px"/>
+<img src="asset/setup_intro_b.png" alt="Mechanical layout with tendon routing" width="380px"/>
 </p>
 
-We propose a vision-based framework for distributed state estimation and closed-loop control of tendon-driven soft robotic arms. Miniature cameras embedded in each section provide dense proprioceptive feedback. CNNs map multi-view images to both tip pose and full-body curvature (constant, affine, quadratic). We evaluate two controllers — a model-based null-space velocity controller built on the Piecewise Constant Curvature (PCC) model, and a data-driven inverse kinematics network with explicit secondary-objective optimization — on single- and multi-section manipulators, in open- and closed-loop, with and without external disturbances.
+*(a) Sensorisation and reconstruction pipeline: images from the embedded cameras are fed to CNNs that predict both the tip poses and the full-body curvature. (b) Tendon-driven multi-section arm with three independent segments, each actuated by three motors; sections II and III are routed via Bowden cables.*
+
+We propose a vision-based framework for distributed state estimation and closed-loop control of tendon-driven soft robotic arms. Miniature cameras embedded in each section provide dense proprioceptive feedback. CNNs map multi-view images to both tip pose and full-body curvature (constant, affine, quadratic). We evaluate two controllers — a model-based null-space velocity controller built on the Piecewise Constant Curvature (PCC) model, and a data-driven inverse kinematics network with explicit secondary-objective optimisation — on single- and multi-section manipulators, in open- and closed-loop, with and without external disturbances.
 
 ---
 
@@ -30,42 +32,34 @@ Two hardware configurations are implemented:
 
 ## Control
 
-Both configurations support two Jacobian-based control strategies:
-
-**Analytic Jacobian** — symbolic Jacobians (`q2tendon`, `q2coordinates`, `q2xyz`) derived with SymPy from the PCC model, evaluated numerically via iterative Jacobian integration.
-
-**Data-driven Jacobian** — Jacobian computed on-the-fly via `torch.autograd.functional.jacobian` applied to learned FK/IK neural networks. Both networks share the residual MLP architecture below: a 128-dim input projection, three residual blocks (`Linear + BatchNorm1d + LeakyReLU` ×2 with a skip connection), and a linear regression head.
+Both configurations support two Jacobian-based control strategies. The **analytic Jacobian** is symbolic, derived with SymPy from the PCC model and evaluated numerically. The **data-driven Jacobian** is obtained via `torch.autograd.functional.jacobian` applied to the learned IK network. For the MULTI configuration, the model-based controller exploits kinematic redundancy through explicit null-space projection toward the mean tendon configuration; the data-driven controller incorporates the same secondary objective during training via a Lagrangian term.
 
 <p align="center">
-<img src="asset/imgs/network_b.png" alt="MLP architecture for forward/inverse kinematics" width="720px"/>
+<img src="asset/model_based_multi.png" alt="Model-based control scheme" width="460px"/>
+<img src="asset/data_driven_multi.png" alt="Data-driven control scheme" width="380px"/>
 </p>
 
-The MULTI configuration is kinematically redundant (9 actuators, 6-DoF tip pose). A null-space controller exploits this redundancy to simultaneously track the tip target and drive the motor configuration toward a nominal posture:
+*Multi-section closed-loop control schemes with camera feedback. (a) Model-based controller with null-space optimisation toward the mean tendon configuration `ℓ̄`. (b) Data-driven controller using the learned inverse Jacobian; encoder feedback is not required.*
 
-```
-dDELTAL = J_pseudo @ delta_pose + N @ (DELTAL_mean - DELTAL_current)
-```
-
-### Robustness to external disturbances
-
-Closed-loop feedback compensates for gravity- and contact-induced shape distortion. The frames below visualise open-loop circular tracking *without* (left) and *with* (right) a 50 g tip payload (≈40 % of the manipulator effective mass) — exposing the deformation that the closed-loop controller actively corrects.
+The forward and inverse kinematics networks of the data-driven path share a residual MLP backbone:
 
 <p align="center">
-<img src="asset/imgs/circle_visualization_a.png" alt="Open-loop circular motion, no payload" width="280px"/>
-<img src="asset/imgs/circle_visualization_b.png" alt="Open-loop circular motion, 50 g payload" width="280px"/>
+<img src="asset/network_b.png" alt="MLP architecture" width="720px"/>
 </p>
+
+*MLP architecture for kinematics approximations. The input vector is projected into a 128-dim latent space and processed through three residual blocks (Linear + BatchNorm1d + LeakyReLU ×2 with skip connections), followed by a linear regression head.*
 
 ---
 
 ## Sensing & Reconstruction
 
-**Tip pose** is estimated by a CNN that maps a grayscale camera frame to end-effector position and orientation (`helyx_model.pt`). For the MULTI configuration, three cameras observe the three sections independently and the three views are stacked as channels of a single input tensor. The architecture is a MobileNetV2 backbone with inverted residual bottlenecks, fine-tuned on our dataset. Online augmentations (brightness/contrast) precede a unit-normalised custom input convolution; global average pooling and a single linear head produce the regression outputs (6 for the single-section tip, 18 for the multi-section tips, or polynomial curvature parameters per section). Transfer learning is shared between the pose and curvature networks, and from the single- to the multi-section configuration.
+**Tip pose** is estimated by a CNN that maps stacked grayscale frames to end-effector position and orientation (`helyx_model.pt`). **Full-body shape reconstruction** uses dedicated CNN heads that regress constant, affine, or quadratic polynomial curvature parameters per section. Ground-truth curvature labels are obtained by fitting these polynomials to OptiTrack backbone-marker rotations via CasADi/IPOPT.
 
 <p align="center">
-<img src="asset/imgs/network_a.png" alt="CNN architecture for tip pose and curvature regression" width="780px"/>
+<img src="asset/network_a.png" alt="CNN architecture" width="780px"/>
 </p>
 
-**Shape reconstruction** fits polynomial curvature models — constant, affine, or quadratic — to rotation matrices derived from OptiTrack backbone markers, via CasADi/IPOPT optimisation. An ANN-based reconstruction path is also available, using section-specific TorchScript models inferred from relative inter-section transforms.
+*CNN architecture used for full-body reconstruction. Stacked grayscale images are processed through online augmentations and custom 1- or 3-channel convolutions. A MobileNetV2 backbone with inverted residual bottlenecks is fine-tuned on our dataset and followed by global average pooling (GAP) and a single linear head, which regresses tip poses or curvature parameters per section. Transfer learning is applied between pose and curvature networks and across the single- and multi-section configurations.*
 
 ---
 
@@ -109,7 +103,7 @@ VisionSoftControl/
 |------|-------------|
 | `helyx_model.pt` | CNN: grayscale image(s) → tip pose (`f_p^1` or `f_p^3`) |
 | `FK_model.pt` | Forward kinematics MLP: ΔDELTAL → tip pose (MULTI) |
-| `IK_model.pt` | Inverse kinematics MLP with null-space regularization: tip pose → ΔDELTAL (MULTI) |
+| `IK_model.pt` | Inverse kinematics MLP with null-space regularisation: tip pose → ΔDELTAL (MULTI) |
 | `constant_model.pt` / `affine_model.pt` / `quadratic_model.pt` | Polynomial curvature regressors |
 | `*_for_MULTI_model.pt` | Section-specific curvature models used for MULTI reconstruction |
 | `DELTAL_stats.pt` | Normalisation statistics for the MULTI null-space objective |
@@ -216,8 +210,6 @@ python MULTI_try_motion.py
 ---
 
 ## Citation
-
-If you use this code, please cite:
 
 ```bibtex
 @article{vignoli2026vision,
