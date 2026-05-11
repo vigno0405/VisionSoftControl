@@ -27,6 +27,18 @@ Continuum manipulator built on a Trimmed Helicoid (TH) structure, actuated by ca
 
 ---
 
+## Sensing & Reconstruction
+
+**Tip pose** is regressed by `helyx_model.pt` from stacked grayscale frames (one per section). **Full-body shape** uses dedicated CNN heads for constant, affine, and quadratic polynomial curvature per section. Ground-truth curvature labels are obtained by fitting these polynomials to OptiTrack backbone-marker rotations via CasADi/IPOPT.
+
+<p align="center">
+<img src="asset/network_a.png" alt="CNN architecture" width="780px"/>
+</p>
+
+<p align="center"><em>CNN architecture for full-body reconstruction. Stacked grayscale images go through online augmentations and 1- or 3-channel input convolutions, then a fine-tuned MobileNetV2 backbone with inverted residual bottlenecks. GAP and a linear head regress tip poses or per-section curvature parameters. Transfer learning is shared between pose and curvature networks and across SINGLE and MULTI configurations.</em></p>
+
+---
+
 ## Control
 
 Two Jacobian-based strategies. The **analytic Jacobian** is symbolic, derived with SymPy from the PCC model and evaluated numerically. The **data-driven Jacobian** is obtained via `torch.autograd.functional.jacobian` on the learned IK network. In MULTI, the model-based controller projects the secondary objective (mean tendon configuration) through the analytic null space; the data-driven controller bakes the same objective into training via a Lagrangian term.
@@ -45,18 +57,6 @@ The forward and inverse kinematics networks of the data-driven path share a resi
 </p>
 
 <p align="center"><em>MLP architecture for kinematics approximations. Inputs are projected into a 128-dim latent space and processed through three residual blocks (Linear + BatchNorm1d + LeakyReLU ×2, skip), followed by a linear regression head.</em></p>
-
----
-
-## Sensing & Reconstruction
-
-**Tip pose** is regressed by `helyx_model.pt` from stacked grayscale frames (one per section). **Full-body shape** uses dedicated CNN heads for constant, affine, and quadratic polynomial curvature per section. Ground-truth curvature labels are obtained by fitting these polynomials to OptiTrack backbone-marker rotations via CasADi/IPOPT.
-
-<p align="center">
-<img src="asset/network_a.png" alt="CNN architecture" width="780px"/>
-</p>
-
-<p align="center"><em>CNN architecture for full-body reconstruction. Stacked grayscale images go through online augmentations and 1- or 3-channel input convolutions, then a fine-tuned MobileNetV2 backbone with inverted residual bottlenecks. GAP and a linear head regress tip poses or per-section curvature parameters. Transfer learning is shared between pose and curvature networks and across SINGLE and MULTI configurations.</em></p>
 
 ---
 
@@ -98,10 +98,10 @@ VisionSoftControl/
 
 | File | Description |
 |------|-------------|
-| `helyx_model.pt` | CNN: grayscale image(s) → tip pose (`f_p^1` or `f_p^3`) |
-| `FK_model.pt` | Forward kinematics MLP: ΔDELTAL → tip pose (MULTI) |
-| `IK_model.pt` | Inverse kinematics MLP with null-space regularisation: tip pose → ΔDELTAL (MULTI) |
-| `constant_model.pt` / `affine_model.pt` / `quadratic_model.pt` | Polynomial curvature regressors |
+| `helyx_model.pt` | CNN: grayscale image(s) → tip pose ($f_p^1$ or $f_p^3$) |
+| `FK_model.pt` | Forward kinematics MLP $N_p^3$: $\delta\ell$ → tip pose (MULTI) |
+| `IK_model.pt` | Inverse kinematics MLP $N_\ell^3$ with null-space regularisation: tip pose → $\delta\ell$ (MULTI) |
+| `constant_model.pt` / `affine_model.pt` / `quadratic_model.pt` | Polynomial curvature regressors ($f_C^1$ for SINGLE, $f_C^3$ for MULTI) |
 | `*_for_MULTI_model.pt` | Section-specific curvature models for MULTI reconstruction |
 | `DELTAL_stats.pt` | Normalisation statistics for the MULTI null-space objective |
 
