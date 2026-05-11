@@ -15,7 +15,7 @@ Vision-based framework for distributed state estimation and closed-loop control 
 
 ## Robot
 
-Continuum manipulator built on a Trimmed Helicoid (TH) structure, actuated by cable tendons. Each section is parameterised by curvature coordinates `q = [Dx, Dy, Dl]` (lateral deflections and length extension). Tendon-length changes ΔDELTAL [mm] map to Dynamixel encoder ticks via `unit_scale = 4096 / (π · D_pulley)`.
+Continuum manipulator built on a Trimmed Helicoid (TH) structure, actuated by cable tendons. Each section is parameterised by curvature coordinates $q = [\Delta_x, \Delta_y, L]^T$ (lateral deflections and central length). Tendon-length changes $\delta\ell$ [mm] (variable `DELTAL` in code) map to Dynamixel encoder ticks via $u = 4096/(\pi D_{\text{pulley}})$.
 
 | | SINGLE | MULTI |
 |---|--------|-------|
