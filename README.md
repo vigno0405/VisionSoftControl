@@ -1,24 +1,21 @@
 # Internal Camera-based Reconstruction and Closed-loop Control of Soft Robotic Arms
 
-This repository contains the code accompanying the paper:
-**Internal Camera-based Reconstruction and Closed-loop Control of Soft Robotic Arms** — L. Vignoli, G. Pei, F. Braghin, J. Hughes.
+Code for the paper **Internal Camera-based Reconstruction and Closed-loop Control of Soft Robotic Arms** by L. Vignoli, G. Pei, F. Braghin, J. Hughes.
 
 <p align="center">
-<img src="asset/setup_intro_a.png" alt="Sensing pipeline and multi-section arm" width="430px"/>
-<img src="asset/setup_intro_b.png" alt="Mechanical layout with tendon routing" width="380px"/>
+<img src="asset/setup_intro_a.png" alt="Sensing pipeline and multi-section arm" height="340px"/>
+<img src="asset/setup_intro_b.png" alt="Mechanical layout with tendon routing" height="340px"/>
 </p>
 
-*(a) Sensorisation and reconstruction pipeline: images from the embedded cameras are fed to CNNs that predict both the tip poses and the full-body curvature. (b) Tendon-driven multi-section arm with three independent segments, each actuated by three motors; sections II and III are routed via Bowden cables.*
+*(a) Sensorisation and reconstruction pipeline: embedded cameras feed CNNs that predict tip poses and full-body curvature. (b) Tendon-driven multi-section arm, three independent segments with three motors each; sections II and III are routed via Bowden cables.*
 
-We propose a vision-based framework for distributed state estimation and closed-loop control of tendon-driven soft robotic arms. Miniature cameras embedded in each section provide dense proprioceptive feedback. CNNs map multi-view images to both tip pose and full-body curvature (constant, affine, quadratic). We evaluate two controllers — a model-based null-space velocity controller built on the Piecewise Constant Curvature (PCC) model, and a data-driven inverse kinematics network with explicit secondary-objective optimisation — on single- and multi-section manipulators, in open- and closed-loop, with and without external disturbances.
+Vision-based framework for distributed state estimation and closed-loop control of tendon-driven soft robotic arms. Cameras embedded in each section feed CNNs that regress tip pose and polynomial curvature (constant, affine, quadratic). Two controllers are evaluated: a model-based null-space velocity controller built on the Piecewise Constant Curvature (PCC) model, and a data-driven inverse kinematics network with secondary-objective regularisation. Tested on single- and multi-section manipulators, in open- and closed-loop, with and without external disturbances.
 
 ---
 
 ## Robot
 
-The arm is a continuum manipulator whose shape is determined by cable-tendon actuation applied to a Trimmed Helicoid (TH) structure. Each section is parameterised by curvature coordinates `q = [Dx, Dy, Dl]`, where `Dx` and `Dy` are lateral deflections and `Dl` is the length extension. Tendon-length changes ΔDELTAL [mm] are converted to Dynamixel encoder ticks by `unit_scale = 4096 / (π · D_pulley)`.
-
-Two hardware configurations are implemented:
+Continuum manipulator built on a Trimmed Helicoid (TH) structure, actuated by cable tendons. Each section is parameterised by curvature coordinates `q = [Dx, Dy, Dl]` (lateral deflections and length extension). Tendon-length changes ΔDELTAL [mm] map to Dynamixel encoder ticks via `unit_scale = 4096 / (π · D_pulley)`.
 
 | | SINGLE | MULTI |
 |---|--------|-------|
@@ -32,14 +29,14 @@ Two hardware configurations are implemented:
 
 ## Control
 
-Both configurations support two Jacobian-based control strategies. The **analytic Jacobian** is symbolic, derived with SymPy from the PCC model and evaluated numerically. The **data-driven Jacobian** is obtained via `torch.autograd.functional.jacobian` applied to the learned IK network. For the MULTI configuration, the model-based controller exploits kinematic redundancy through explicit null-space projection toward the mean tendon configuration; the data-driven controller incorporates the same secondary objective during training via a Lagrangian term.
+Two Jacobian-based strategies. The **analytic Jacobian** is symbolic, derived with SymPy from the PCC model and evaluated numerically. The **data-driven Jacobian** is obtained via `torch.autograd.functional.jacobian` on the learned IK network. In MULTI, the model-based controller projects the secondary objective (mean tendon configuration) through the analytic null space; the data-driven controller bakes the same objective into training via a Lagrangian term.
 
 <p align="center">
-<img src="asset/model_based_multi.png" alt="Model-based control scheme" width="460px"/>
-<img src="asset/data_driven_multi.png" alt="Data-driven control scheme" width="380px"/>
+<img src="asset/model_based_multi.png" alt="Model-based control scheme" height="220px"/>
+<img src="asset/data_driven_multi.png" alt="Data-driven control scheme" height="220px"/>
 </p>
 
-*Multi-section closed-loop control schemes with camera feedback. (a) Model-based controller with null-space optimisation toward the mean tendon configuration `ℓ̄`. (b) Data-driven controller using the learned inverse Jacobian; encoder feedback is not required.*
+*Multi-section closed-loop control schemes with camera feedback. (a) Model-based controller with null-space optimisation toward the mean tendon configuration `ℓ̄`. (b) Data-driven controller using the learned inverse Jacobian; no encoder feedback.*
 
 The forward and inverse kinematics networks of the data-driven path share a residual MLP backbone:
 
@@ -47,19 +44,19 @@ The forward and inverse kinematics networks of the data-driven path share a resi
 <img src="asset/network_b.png" alt="MLP architecture" width="720px"/>
 </p>
 
-*MLP architecture for kinematics approximations. The input vector is projected into a 128-dim latent space and processed through three residual blocks (Linear + BatchNorm1d + LeakyReLU ×2 with skip connections), followed by a linear regression head.*
+*MLP architecture for kinematics approximations. Inputs are projected into a 128-dim latent space and processed through three residual blocks (Linear + BatchNorm1d + LeakyReLU ×2, skip), followed by a linear regression head.*
 
 ---
 
 ## Sensing & Reconstruction
 
-**Tip pose** is estimated by a CNN that maps stacked grayscale frames to end-effector position and orientation (`helyx_model.pt`). **Full-body shape reconstruction** uses dedicated CNN heads that regress constant, affine, or quadratic polynomial curvature parameters per section. Ground-truth curvature labels are obtained by fitting these polynomials to OptiTrack backbone-marker rotations via CasADi/IPOPT.
+**Tip pose** is regressed by `helyx_model.pt` from stacked grayscale frames (one per section). **Full-body shape** uses dedicated CNN heads for constant, affine, and quadratic polynomial curvature per section. Ground-truth curvature labels are obtained by fitting these polynomials to OptiTrack backbone-marker rotations via CasADi/IPOPT.
 
 <p align="center">
 <img src="asset/network_a.png" alt="CNN architecture" width="780px"/>
 </p>
 
-*CNN architecture used for full-body reconstruction. Stacked grayscale images are processed through online augmentations and custom 1- or 3-channel convolutions. A MobileNetV2 backbone with inverted residual bottlenecks is fine-tuned on our dataset and followed by global average pooling (GAP) and a single linear head, which regresses tip poses or curvature parameters per section. Transfer learning is applied between pose and curvature networks and across the single- and multi-section configurations.*
+*CNN architecture for full-body reconstruction. Stacked grayscale images go through online augmentations and 1- or 3-channel input convolutions, then a fine-tuned MobileNetV2 backbone with inverted residual bottlenecks. GAP and a linear head regress tip poses or per-section curvature parameters. Transfer learning is shared between pose and curvature networks and across SINGLE and MULTI configurations.*
 
 ---
 
@@ -105,10 +102,10 @@ VisionSoftControl/
 | `FK_model.pt` | Forward kinematics MLP: ΔDELTAL → tip pose (MULTI) |
 | `IK_model.pt` | Inverse kinematics MLP with null-space regularisation: tip pose → ΔDELTAL (MULTI) |
 | `constant_model.pt` / `affine_model.pt` / `quadratic_model.pt` | Polynomial curvature regressors |
-| `*_for_MULTI_model.pt` | Section-specific curvature models used for MULTI reconstruction |
+| `*_for_MULTI_model.pt` | Section-specific curvature models for MULTI reconstruction |
 | `DELTAL_stats.pt` | Normalisation statistics for the MULTI null-space objective |
 
-Recorded control results and workspace samples are stored as `.npz` archives alongside the source files. Raw training datasets are available from the corresponding author on reasonable request.
+Control results and workspace samples are stored as `.npz` archives. Raw training datasets are available from the corresponding author on reasonable request.
 
 ---
 
@@ -121,11 +118,11 @@ Recorded control results and workspace samples are stored as `.npz` archives alo
 | Actuators | DYNAMIXEL XL330-M288-T, Protocol 2.0, 57600 baud, `/dev/ttyUSB0` |
 | Pulley diameter | 6 mm |
 | SINGLE motors | IDs 1–3, tendon angles 0°, 120°, −120° |
-| MULTI motors | IDs 11–19 (three groups of three; sections II–III routed via Bowden cables) |
+| MULTI motors | IDs 11–19 (three groups of three; sections II/III via Bowden cables) |
 | Cameras | USB grayscale, 480 × 640 (OpenCV V4L2 backend) |
 | Motion capture | OptiTrack Prime 13 ×6, via ROS `geometry_msgs/PoseStamped` topics |
 
-The robot base frame and the OptiTrack world frame are related by a fixed correction `R_corr = [[1,0,0],[0,0,-1],[0,1,0]]`. All lengths are in millimetres; angles in radians.
+Robot base and OptiTrack world frames are related by `R_corr = [[1,0,0],[0,0,-1],[0,1,0]]`. Lengths in millimetres, angles in radians.
 
 ### Dependencies
 
@@ -144,7 +141,7 @@ plotly
 matplotlib
 ```
 
-ROS Noetic must be sourced and `rospy` importable. OptiTrack data is consumed from live ROS topics. Before each session:
+ROS Noetic must be sourced. Before each session:
 
 ```bash
 roslaunch optitrack_ros_communication optitrack_nodes.launch
@@ -155,18 +152,18 @@ v4l2-ctl --list-devices
 
 ## Usage
 
-All scripts are run from within the respective `SINGLE/` or `MULTI/` subdirectory. Motor calibration runs interactively at startup (`w`/`s`/`h` keys, adaptive acceleration). Camera-to-section assignment in the MULTI configuration is also interactive.
+All scripts run from inside `SINGLE/` or `MULTI/`. Motor calibration is interactive (`w`/`s`/`h` keys, adaptive acceleration); MULTI camera-to-section assignment is also interactive.
 
 ### Data collection
 
 ```bash
-# SINGLE: random ΔDELTAL sampling with camera and mocap recording (10,000 samples)
+# SINGLE: random ΔDELTAL sampling with camera + mocap (10,000 samples)
 python SINGLE_data_acquire.py
 
 # MULTI: concurrent camera + mocap acquisition with per-batch confirmation
 python MULTI_data_acquire.py
 
-# MULTI: forward kinematics dataset (ΔDELTAL → tip pose) for IK training
+# MULTI: FK dataset (ΔDELTAL → tip pose) for IK training
 python MULTI_FK_acquire.py
 ```
 
@@ -185,24 +182,24 @@ jupyter notebook MULTI_helyx_testing.ipynb
 ### Control evaluation
 
 ```bash
-# SINGLE: closed-loop and open-loop polygon tracking / workspace sampling
+# SINGLE: closed/open-loop polygon tracking and workspace sampling
 python SINGLE_control_test.py
 jupyter notebook SINGLE_control_results.ipynb
 
-# MULTI: interactive suite — closed/open-loop × data-driven/Jacobian × null-space check
+# MULTI: interactive suite (closed/open-loop × data-driven/Jacobian × null-space check)
 python MULTI_control_test.py
 jupyter notebook MULTI_control_results.ipynb
 
-# MULTI: curvature validation (analytical reconstruction vs. ANN prediction)
+# MULTI: analytical vs. ANN curvature validation
 python MULTI_curvature_checks.py
 ```
 
-The 50 g payload experiment is run by setting `WEIGHT = True` (and the appropriate `w_string`) at the top of [`MULTI_control_test.py`](MULTI/MULTI_control_test.py) and re-running the corresponding workspace and polygon modalities.
+The 50 g payload experiment is run by setting `WEIGHT = True` at the top of [`MULTI_control_test.py`](MULTI/MULTI_control_test.py) and re-running the workspace and polygon modalities.
 
 ### Utilities
 
 ```bash
-# Random workspace exploration (debugging and demos)
+# Random workspace exploration
 python SINGLE_try_motion.py
 python MULTI_try_motion.py
 ```
@@ -223,4 +220,4 @@ python MULTI_try_motion.py
 
 ## License
 
-MIT — see [LICENSE](LICENSE).
+MIT, see [LICENSE](LICENSE).
