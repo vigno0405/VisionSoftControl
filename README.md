@@ -2,10 +2,10 @@
 
 Code for the paper **Internal Camera-based Reconstruction and Closed-loop Control of Soft Robotic Arms** by L. Vignoli, G. Pei, F. Braghin, J. Hughes.
 
-<p align="center">
-<img src="asset/setup_intro_a.png" alt="Sensing pipeline and multi-section arm" height="340px"/>
-<img src="asset/setup_intro_b.png" alt="Mechanical layout with tendon routing" height="340px"/>
-</p>
+<table align="center"><tr>
+<td><img src="asset/setup_intro_a.png" alt="Sensing pipeline and multi-section arm" height="340px"/></td>
+<td><img src="asset/setup_intro_b.png" alt="Mechanical layout with tendon routing" height="340px"/></td>
+</tr></table>
 
 *(a) Sensorisation and reconstruction pipeline: embedded cameras feed CNNs that predict tip poses and full-body curvature. (b) Tendon-driven multi-section arm, three independent segments with three motors each; sections II and III are routed via Bowden cables.*
 
@@ -31,17 +31,17 @@ Continuum manipulator built on a Trimmed Helicoid (TH) structure, actuated by ca
 
 Two Jacobian-based strategies. The **analytic Jacobian** is symbolic, derived with SymPy from the PCC model and evaluated numerically. The **data-driven Jacobian** is obtained via `torch.autograd.functional.jacobian` on the learned IK network. In MULTI, the model-based controller projects the secondary objective (mean tendon configuration) through the analytic null space; the data-driven controller bakes the same objective into training via a Lagrangian term.
 
-<p align="center">
-<img src="asset/model_based_multi.png" alt="Model-based control scheme" height="220px"/>
-<img src="asset/data_driven_multi.png" alt="Data-driven control scheme" height="220px"/>
-</p>
+<table align="center"><tr>
+<td><img src="asset/model_based_multi.png" alt="Model-based control scheme" height="220px"/></td>
+<td><img src="asset/data_driven_multi.png" alt="Data-driven control scheme" height="220px"/></td>
+</tr></table>
 
 *Multi-section closed-loop control schemes with camera feedback. (a) Model-based controller with null-space optimisation toward the mean tendon configuration `ℓ̄`. (b) Data-driven controller using the learned inverse Jacobian; no encoder feedback.*
 
 The forward and inverse kinematics networks of the data-driven path share a residual MLP backbone:
 
 <p align="center">
-<img src="asset/network_b.png" alt="MLP architecture" width="720px"/>
+<img src="asset/network_b.png" alt="MLP architecture" width="780px"/>
 </p>
 
 *MLP architecture for kinematics approximations. Inputs are projected into a 128-dim latent space and processed through three residual blocks (Linear + BatchNorm1d + LeakyReLU ×2, skip), followed by a linear regression head.*
@@ -122,7 +122,7 @@ Control results and workspace samples are stored as `.npz` archives. Raw trainin
 | Cameras | USB grayscale, 480 × 640 (OpenCV V4L2 backend) |
 | Motion capture | OptiTrack Prime 13 ×6, via ROS `geometry_msgs/PoseStamped` topics |
 
-Robot base and OptiTrack world frames are related by `R_corr = [[1,0,0],[0,0,-1],[0,1,0]]`. Lengths in millimetres, angles in radians.
+Lengths in millimetres, angles in radians.
 
 ### Dependencies
 
@@ -202,18 +202,6 @@ The 50 g payload experiment is run by setting `WEIGHT = True` at the top of [`MU
 # Random workspace exploration
 python SINGLE_try_motion.py
 python MULTI_try_motion.py
-```
-
----
-
-## Citation
-
-```bibtex
-@article{vignoli2026vision,
-  author  = {Vignoli, Lorenzo and Pei, Guanran and Braghin, Francesco and Hughes, Josie},
-  title   = {Internal Camera-based Reconstruction and Closed-loop Control of Soft Robotic Arms},
-  year    = {2026}
-}
 ```
 
 ---
