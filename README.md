@@ -7,7 +7,7 @@ Code for the paper **Internal Camera-based Reconstruction and Closed-loop Contro
 <td><img src="asset/setup_intro_b.png" alt="Mechanical layout with tendon routing" height="340px"/></td>
 </tr></table>
 
-*(a) Sensorisation and reconstruction pipeline: embedded cameras feed CNNs that predict tip poses and full-body curvature. (b) Tendon-driven multi-section arm, three independent segments with three motors each; sections II and III are routed via Bowden cables.*
+<p align="center"><em>(a) Sensorisation and reconstruction pipeline: embedded cameras feed CNNs that predict tip poses and full-body curvature. (b) Tendon-driven multi-section arm, three independent segments with three motors each; sections II and III are routed via Bowden cables.</em></p>
 
 Vision-based framework for distributed state estimation and closed-loop control of tendon-driven soft robotic arms. Cameras embedded in each section feed CNNs that regress tip pose and polynomial curvature (constant, affine, quadratic). Two controllers are evaluated: a model-based null-space velocity controller built on the Piecewise Constant Curvature (PCC) model, and a data-driven inverse kinematics network with secondary-objective regularisation. Tested on single- and multi-section manipulators, in open- and closed-loop, with and without external disturbances.
 
@@ -36,7 +36,7 @@ Two Jacobian-based strategies. The **analytic Jacobian** is symbolic, derived wi
 <td><img src="asset/data_driven_multi.png" alt="Data-driven control scheme" height="220px"/></td>
 </tr></table>
 
-*Multi-section closed-loop control schemes with camera feedback. (a) Model-based controller with null-space optimisation toward the mean tendon configuration `ℓ̄`. (b) Data-driven controller using the learned inverse Jacobian; no encoder feedback.*
+<p align="center"><em>Multi-section closed-loop control schemes with camera feedback. (a) Model-based controller with null-space optimisation toward the mean tendon configuration $\bar{\ell}$. (b) Data-driven controller using the learned inverse Jacobian; no encoder feedback.</em></p>
 
 The forward and inverse kinematics networks of the data-driven path share a residual MLP backbone:
 
@@ -44,7 +44,7 @@ The forward and inverse kinematics networks of the data-driven path share a resi
 <img src="asset/network_b.png" alt="MLP architecture" width="780px"/>
 </p>
 
-*MLP architecture for kinematics approximations. Inputs are projected into a 128-dim latent space and processed through three residual blocks (Linear + BatchNorm1d + LeakyReLU ×2, skip), followed by a linear regression head.*
+<p align="center"><em>MLP architecture for kinematics approximations. Inputs are projected into a 128-dim latent space and processed through three residual blocks (Linear + BatchNorm1d + LeakyReLU ×2, skip), followed by a linear regression head.</em></p>
 
 ---
 
@@ -56,7 +56,7 @@ The forward and inverse kinematics networks of the data-driven path share a resi
 <img src="asset/network_a.png" alt="CNN architecture" width="780px"/>
 </p>
 
-*CNN architecture for full-body reconstruction. Stacked grayscale images go through online augmentations and 1- or 3-channel input convolutions, then a fine-tuned MobileNetV2 backbone with inverted residual bottlenecks. GAP and a linear head regress tip poses or per-section curvature parameters. Transfer learning is shared between pose and curvature networks and across SINGLE and MULTI configurations.*
+<p align="center"><em>CNN architecture for full-body reconstruction. Stacked grayscale images go through online augmentations and 1- or 3-channel input convolutions, then a fine-tuned MobileNetV2 backbone with inverted residual bottlenecks. GAP and a linear head regress tip poses or per-section curvature parameters. Transfer learning is shared between pose and curvature networks and across SINGLE and MULTI configurations.</em></p>
 
 ---
 
