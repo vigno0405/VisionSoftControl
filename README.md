@@ -50,7 +50,7 @@ Two Jacobian-based strategies. The **analytic Jacobian** is symbolic, derived wi
 <td><img src="asset/data_driven_multi.png" alt="Data-driven control scheme" height="220px"/></td>
 </tr></table>
 
-<p align="center"><em>Multi-section closed-loop control schemes with camera feedback. (a) Model-based controller with null-space optimisation toward the mean tendon configuration $\bar{\ell}$. (b) Data-driven controller using the learned inverse Jacobian; no encoder feedback.</em></p>
+<p align="center"><em>Multi-section closed-loop control schemes with camera feedback. (a) Model-based controller with null-space optimisation toward the mean tendon configuration. (b) Data-driven controller using the learned inverse Jacobian; no encoder feedback.</em></p>
 
 The forward and inverse kinematics networks of the data-driven path share a residual MLP backbone:
 
