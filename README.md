@@ -2,6 +2,8 @@
 
 Code for the paper **Internal Camera-based Reconstruction and Closed-loop Control of Soft Robotic Arms** by L. Vignoli, G. Pei, F. Braghin, J. Hughes.
 
+**Dataset:** The dataset used in this work is available on Zenodo: [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.20138549.svg)](https://doi.org/10.5281/zenodo.20138549)
+
 <table align="center"><tr>
 <td><img src="asset/setup_intro_a.png" alt="Sensing pipeline and multi-section arm" height="340px"/></td>
 <td><img src="asset/setup_intro_b.png" alt="Mechanical layout with tendon routing" height="340px"/></td>
