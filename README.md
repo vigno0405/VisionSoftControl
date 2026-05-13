@@ -11,7 +11,7 @@ Code for the paper **Internal Camera-based Reconstruction and Closed-loop Contro
 
 <p align="center"><em>(a) Sensorisation and reconstruction pipeline: embedded cameras feed CNNs that predict tip poses and full-body curvature. (b) Tendon-driven multi-section arm, three independent segments with three motors each; sections II and III are routed via Bowden cables.</em></p>
 
-Daje. Vision-based framework for distributed state estimation and closed-loop control of tendon-driven soft robotic arms. Cameras embedded in each section feed CNNs that regress tip pose and polynomial curvature (constant, affine, quadratic). Two controllers are evaluated: a model-based null-space velocity controller built on the Piecewise Constant Curvature (PCC) model, and a data-driven inverse kinematics network with secondary-objective regularisation. Tested on single- and multi-section manipulators, in open- and closed-loop, with and without external disturbances.
+Vision-based framework for distributed state estimation and closed-loop control of tendon-driven soft robotic arms. Cameras embedded in each section feed CNNs that regress tip pose and polynomial curvature (constant, affine, quadratic). Two controllers are evaluated: a model-based null-space velocity controller built on the Piecewise Constant Curvature (PCC) model, and a data-driven inverse kinematics network with secondary-objective regularisation. Tested on single- and multi-section manipulators, in open- and closed-loop, with and without external disturbances.
 
 ---
 
