@@ -449,8 +449,8 @@ class SINGLEController:
             d_DELTAL = self.JacobianSensor(x) @ delta_x
         else:
             J_q2L, J_q2x = self.AnalyticJacobians(DELTAL_current)
-            reg = 1e-3 * np.eye(3)
-            J_pinv = np.linalg.inv(J_q2x.T @ J_q2x + reg) @ J_q2x.T
+            reg = 1e-2 * np.eye(3)
+            J_pinv = J_q2x.T @ np.linalg.inv(J_q2x @ J_q2x.T + reg)
             d_DELTAL = J_q2L @ J_pinv @ delta_x
 
         # Adjust DELTAL_integral
